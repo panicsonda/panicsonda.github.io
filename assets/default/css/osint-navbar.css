@@ -45,7 +45,7 @@
 
 .navbar ul li a:hover {
   background-color: black;
-  color: #e60073;
+  color: var(--red);
 }
 
 /* First level submenu */
@@ -73,7 +73,7 @@
 }
 
 .navbar ul li ul li a:hover {
-  background-color: #e60073;
+  background-color: var(--red);
   color: black;
 }
 
@@ -106,7 +106,7 @@
 
 /* Styling for hover in the second-level submenu */
 .navbar ul li ul li ul li a:hover {
-  background-color: #e60073;
+  background-color: var(--red);
   color: black;
 }
 
