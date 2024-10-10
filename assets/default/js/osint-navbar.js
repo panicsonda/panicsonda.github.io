@@ -1,4 +1,4 @@
-// Function to create a dropdown menu
+// Function to create a dropdown menu item
 function createMenuItem(item) {
     const li = document.createElement('li');
     const a = document.createElement('a');
@@ -50,23 +50,18 @@ function categorizeMenu(data) {
             categories["Search"]["Records"].push(item);
         } else if (item.name.includes("Images") || item.name.includes("Videos") || item.name.includes("Docs")) {
             categories["Search"]["Media"].push(item);
-        } else if (item.name.includes("Images") || item.name.includes("Telephone Numbers") || item.name.includes("Docs")) {
+        } else if (item.name.includes("Telephone Numbers")) {
             categories["Search"]["Telephone Numbers"].push(item);
         } else if (item.name.includes("Domain") || item.name.includes("IP") || item.name.includes("MAC")) {
             categories["Search"]["Domain/IP"].push(item);
-
         } else if (item.name.includes("Metadata") || item.name.includes("Archives") || item.name.includes("Classifieds")) {
             categories["Vault"].push(item);
-
-        } else if (item.name.includes("Tools")|| item.name.includes("Emulation") || item.name.includes("Translation") || item.name.includes("Analysis")|| item.name.includes("Encoding")|| item.name.includes("Digital")) {
+        } else if (item.name.includes("Tools") || item.name.includes("Emulation") || item.name.includes("Translation") || item.name.includes("Analysis") || item.name.includes("Encoding") || item.name.includes("Digital")) {
             categories["Tools"].push(item);
-
         } else if (item.name.includes("Dark Web") || item.name.includes("Terrorism")) {
             categories["Malicious Activity"].push(item);
-
-        } else if (item.name.includes("Exploit")|| item.name.includes("Threat")|| item.name.includes("OpSec")) {
+        } else if (item.name.includes("Exploit") || item.name.includes("Threat") || item.name.includes("OpSec")) {
             categories["Exploits"].push(item);
-
         } else if (item.name.includes("Dating") || item.name.includes("Instant Messaging") || item.name.includes("Search Engines")) {
             categories["Sites"].push(item);
         } else {
@@ -77,7 +72,7 @@ function categorizeMenu(data) {
     return categories;
 }
 
-// Generate menu HTML based on improved categories, adding the OSINT category as a wrapper
+// Function to generate the categorized menu under the "OSINT" link
 function generateMenu(menu, categories) {
     const osintLi = document.createElement('li');
     const osintA = document.createElement('a');
@@ -85,6 +80,7 @@ function generateMenu(menu, categories) {
     osintLi.appendChild(osintA);
 
     const osintUl = document.createElement('ul'); // Create a nested <ul> under OSINT
+    osintUl.classList.add('dropdown'); // Add class to style dropdown
 
     for (const category in categories) {
         const li = document.createElement('li');
@@ -95,7 +91,7 @@ function generateMenu(menu, categories) {
         const ul = document.createElement('ul');
 
         if (typeof categories[category] === 'object' && !Array.isArray(categories[category])) {
-            // If it's an object (i.e., "Search"), we generate subcategories
+            // If it's an object (i.e., "Search"), generate subcategories
             for (const subcategory in categories[category]) {
                 const subLi = document.createElement('li');
                 const subA = document.createElement('a');
@@ -124,12 +120,14 @@ function generateMenu(menu, categories) {
     menu.appendChild(osintLi);
 }
 
-// Fetching JSON data
-fetch('https://raw.githubusercontent.com/lockfale/OSINT-Framework/refs/heads/master/public/arf.json')
-    .then(response => response.json())
-    .then(data => {
-        const menu = document.getElementById('menu');
-        const categories = categorizeMenu(data);
-        generateMenu(menu, categories);
-    })
-    .catch(error => console.error('Error fetching the JSON:', error));
+// Fetching JSON data and generating the menu on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const menu = document.getElementById('menu-osint');
+    fetch('https://raw.githubusercontent.com/lockfale/OSINT-Framework/refs/heads/master/public/arf.json')
+        .then(response => response.json())
+        .then(data => {
+            const categories = categorizeMenu(data);
+            generateMenu(menu, categories);
+        })
+        .catch(error => console.error('Error fetching the JSON:', error));
+});

@@ -59,7 +59,7 @@ justify-content: center;
 .search-input {
   width: 100%;
   padding: 15px 20px;
-  border: 2px solid #e60073;
+  border: 2px solid #ff1616;
   border-radius: 25px;
   outline: none;
   background: transparent;
@@ -77,7 +77,7 @@ justify-content: center;
   right: 20px;
   transform: translateY(-50%);
   font-size: 20px;
-  color: #e60073;
+  color: #ff1616;
 }
 
 .nav-links {
@@ -88,7 +88,7 @@ justify-content: center;
 }
 
 .nav-links a {
-  color: #e60073;
+  color: #ff1616;
   text-decoration: none;
 }
 
@@ -112,7 +112,7 @@ justify-content: center;
 }
 
 .search-bar {
-border: 2px solid #E60073;
+border: 2px solid #ff1616;
 background-color: black;
 width: 830px;
 height: 65px;
@@ -125,13 +125,13 @@ margin-top: 20px;
 
 .search-bar:hover {
 background-color: black;
-box-shadow: 3px 3px 30px #E60073;
-border-color: #E60073;
+box-shadow: 3px 3px 30px #ff1616;
+border-color: #ff1616;
 }
 
 .search-bar i {
 font-size: 15px;
-color: rgb(253, 0, 63);
+color: #ff1616;
 margin-right: 15px;
 }
 
@@ -196,7 +196,7 @@ cursor: pointer;
 /* Styling for the selected button */
 .select-button button.selected {
 background-color: transparent;
-color: rgb(253, 0, 63);
+color: #ff1616;
 
 .google-search-btn {
   width: 120px;
@@ -239,7 +239,7 @@ z-index: 1;
 }
 
 .circle-shadow:hover {
-background-color: #E60073;
+background-color: #ff1616;
 }
 
 .circle-shadow svg {
@@ -271,7 +271,7 @@ max-height: 120%;
 /* Styling for the selected button */
 .select-button button.selected {
 background-color: transparent;
-color: #E60073;
+color: #ff1616;
 
 .google-search-btn {
   width: 120px;
