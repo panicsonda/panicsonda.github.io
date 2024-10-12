@@ -16,8 +16,8 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git configconfig --global user.name "github-actions[bot]"
+          git configconfig --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Get latest commit hash from source repository
         id: get_source_commit
@@ -61,7 +61,13 @@ jobs:
           path: temp_source
           ref: main  # Replace with the branch you want to clone
           # If the source repository is private, provide a token:
-          # token: ${{ secrets.SOURCE_REPO_TOKEN }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
+
+      - name: List contents of temp_source
+        if: env.update_needed == 'true'
+        run: |
+          echo "Contents of temp_source:"
+          ls -la temp_source
 
       - name: Update repository with source contents
         if: env.update_needed == 'true'
