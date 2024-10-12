@@ -1,70 +1,63 @@
-name: Update Submodule and Extract
+name: Mirror Source Repository
 
 on:
   schedule:
     - cron: "*/15 * * * *"  # Runs every 15 minutes
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:         # Allows manual triggering
 
 jobs:
-  update-submodule:
+  update_repository:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository and submodules
+    -:
+
+    - name: Checkout this repository
       uses: actions/checkout@v3
       with:
-        submodules: false  # Do not auto-fetch submodules at checkout
-        fetch-depth: 0     # Fetch all history for changes
+        fetch-depth: 0  # Fetch all history for accurate change detection
+
+    -
 
     - name: Set up Git
+
       run: |
-        git config --global user.name "github-actions[bot]"
+        git config config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-    # Initialize and update the submodule in the .public folder
-    - name: Initialize and update submodule in .public
+    - name: Clone the source repository
       run: |
-        # Initialize the submodule (if not already initialized)
-        git submodule init
+        git clone --depth 1 https://github.com/repo/url temp_source
 
-        # Remove existing .public folder if present (to avoid issues with stale files)
-        git submodule deinit -f .public
-        rm -rf .public
+    - name: Remove existing files
+      run: |
+        # Remove all files except the .git directory
+        find . -maxdepth 1 ! -name '.git' ! -name '.' -exec rm -rf {} +
 
-        # Update the submodule to fetch the latest content
-        git submodule update --remote --recursive --force
+    - name: Copy files from source to root
+      run: |
+        # Copy copy all files from temp_source to current directory
+        cp -a temp_source/. .
+        # Remove the cloned source repository directory
+        rm -rf temp_source
 
-    # Check if there are changes in the submodule
-    - name: Check for changes in submodule
+    - name: Check for changes
       id: check_changes
       run: |
-        # Check if there are any changes to commit
-        if [ -n "$(git diff --submodule)" ]; then
+        if [ -n "$(git status --porcelain)" ]; then
           echo "changes=true" >> $GITHUB_ENV
         else
           echo "changes=false" >> $GITHUB_ENV
         fi
 
-    # If changes are detected, delete the old files in the root directory and extract the new ones
-    - name: Deploy submodule to root directory
+    - name: Commit and push changes
       if: env.changes == 'true'
       run: |
-        echo "Changes detected. Deploying new files."
-
-        # Delete all files and folders in the root directory except .public and .git
-        find . -maxdepth 1 -mindepth 1 ! -name '.public' ! -name '.git' -exec rm -rf {} \;
-
-        # Copy the contents of the .public folder to the root directory
-        cp -r .public/* ./ || true  # Ensure it doesn't fail if no files exist
-        cp -r .public/.[^.]* ./  # Copy hidden files (dotfiles)
-
-        # Stage and commit the new changes
         git add .
-        git commit -m "Updated submodule and deployed new files"
+        git commit -m "Mirror update from source repository"
         git push origin HEAD
 
-    # If no changes are detected, do nothing
-    - name: No changes found
+    - name: No changes detected
       if: env.changes == 'false'
       run: |
-        echo "No changes detected in submodule. Nothing to do."
+        echo "No changes detected. No action needed."
