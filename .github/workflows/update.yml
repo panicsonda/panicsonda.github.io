@@ -2,7 +2,7 @@ name: Update Submodule and Extract
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/15 * * * *"  # Runs every 15 minutes
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
@@ -24,20 +24,22 @@ jobs:
     # Initialize and update the submodule in the .public folder
     - name: Initialize and update submodule in .public
       run: |
+        # Initialize the submodule (if not already initialized)
+        git submodule init
+
         # Remove existing .public folder if present (to avoid issues with stale files)
+        git submodule deinit -f .public
         rm -rf .public
 
-        # Initialize the submodule and update it to the latest commit
-        git submodule init
+        # Update the submodule to fetch the latest content
         git submodule update --remote --recursive --force
 
     # Check if there are changes in the submodule
     - name: Check for changes in submodule
       id: check_changes
       run: |
-        mkdir -p .public
-        cd .public
-        if [ -n "$(git status --porcelain)" ]; then
+        # Check if there are any changes to commit
+        if [ -n "$(git diff --submodule)" ]; then
           echo "changes=true" >> $GITHUB_ENV
         else
           echo "changes=false" >> $GITHUB_ENV
@@ -53,7 +55,7 @@ jobs:
         find . -maxdepth 1 -mindepth 1 ! -name '.public' ! -name '.git' -exec rm -rf {} \;
 
         # Copy the contents of the .public folder to the root directory
-        cp -r .public/* ./
+        cp -r .public/* ./ || true  # Ensure it doesn't fail if no files exist
         cp -r .public/.[^.]* ./  # Copy hidden files (dotfiles)
 
         # Stage and commit the new changes
