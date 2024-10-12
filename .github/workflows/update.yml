@@ -28,7 +28,7 @@ jobs:
         rm -rf .public
 
         # Initialize the submodule and update it to the latest commit
-        git submodule add --force --name web <submodule-repo-url> .public
+        git submodule init
         git submodule update --remote --recursive --force
 
     # Check if there are changes in the submodule
