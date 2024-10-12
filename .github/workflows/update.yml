@@ -1,9 +1,9 @@
-name: Update Submodule
+name: Update Submodule and Extract
 
 on:
   schedule:
     - cron: "*/15 * * * *"
-  workflow_dispatch:  # Allows you to manually trigger this workflow
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   update-submodule:
@@ -13,32 +13,55 @@ jobs:
     - name: Checkout repository and submodules
       uses: actions/checkout@v3
       with:
-        submodules: true  # Fetch submodules
-        fetch-depth: 0     # Fetch all history so we can check for changes
+        submodules: false  # Do not auto-fetch submodules at checkout
+        fetch-depth: 0     # Fetch all history for changes
 
     - name: Set up Git
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Fetch latest changes for submodules
+    # Initialize and update the submodule in the .public folder
+    - name: Initialize and update submodule in .public
       run: |
-        git submodule update --remote --force --recursive
-        git fetch --all
+        # Remove existing .public folder if present (to avoid issues with stale files)
+        rm -rf .public
 
-    - name: Debug submodule status
-      run: |
-        git submodule status
-        git submodule foreach 'git status'
-        git submodule foreach 'git log -1 --oneline'
+        # Initialize the submodule and update it to the latest commit
+        git submodule add --force --name web <submodule-repo-url> .public
+        git submodule update --remote --recursive --force
 
-    - name: Commit and push updates if any
+    # Check if there are changes in the submodule
+    - name: Check for changes in submodule
+      id: check_changes
       run: |
+        cd .public
         if [ -n "$(git status --porcelain)" ]; then
-          echo "Changes detected in submodule, committing..."
-          git add .
-          git commit -m "Auto-update submodule to latest commit"
-          git push origin HEAD
+          echo "changes=true" >> $GITHUB_ENV
         else
-          echo "No changes in submodule."
+          echo "changes=false" >> $GITHUB_ENV
         fi
+
+    # If changes are detected, delete the old files in the root directory and extract the new ones
+    - name: Deploy submodule to root directory
+      if: env.changes == 'true'
+      run: |
+        echo "Changes detected. Deploying new files."
+
+        # Delete all files and folders in the root directory except .public and .git
+        find . -maxdepth 1 -mindepth 1 ! -name '.public' ! -name '.git' -exec rm -rf {} \;
+
+        # Copy the contents of the .public folder to the root directory
+        cp -r .public/* ./
+        cp -r .public/.[^.]* ./  # Copy hidden files (dotfiles)
+
+        # Stage and commit the new changes
+        git add .
+        git commit -m "Updated submodule and deployed new files"
+        git push origin HEAD
+
+    # If no changes are detected, do nothing
+    - name: No changes found
+      if: env.changes == 'false'
+      run: |
+        echo "No changes detected in submodule. Nothing to do."
