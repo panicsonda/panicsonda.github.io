@@ -27,7 +27,7 @@ jobs:
         id: get_source_commit
         run: |
           echo "Fetching latest commit hash from source repository..."
-          SOURCE_COMMIT=$(git ls-remote https://github.com/repo/url HEAD | awk '{ print $1 }')
+          SOURCE_COMMIT=$(git ls-remote https://github.com/yonasuriv/PanicSonda HEAD | awk '{ print $1 }')
           echo "Latest source commit hash: $SOURCE_COMMIT"
           echo "source_commit=$SOURCE_COMMIT" >> $GITHUB_OUTPUT
 
@@ -58,7 +58,7 @@ jobs:
         if: env.update_needed == 'true'
         run: |
           # Clone the source repository
-          git clone --depth 1 https://github.com/repo/url temp_source
+          git clone --depth 1 https://github.com/yonasuriv/PanicSonda temp_source
 
           # Remove existing files (except .git and workflow files)
           find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
