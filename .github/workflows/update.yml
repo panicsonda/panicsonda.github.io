@@ -41,3 +41,4 @@ jobs:
           git push origin HEAD
         else
           echo "No changes in submodule."
+        fi
