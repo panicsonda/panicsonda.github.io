@@ -16,14 +16,14 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --global user.name "github-actions[bot]"
+          git config config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Get latest commit hash from source repository
         id: get_source_commit
         run: |
           echo "Fetching latest commit hash from source repository..."
-          SOURCE_HASH=$(git ls-remote https://github.com/yonasuriv/PanicSonda HEAD | awk '{ print $1 }')
+          SOURCE_HASH=$(git ls-remote https://github.com/yonasuriv/PanicSonda.git HEAD | awk '{ print $1 }')
           echo "Latest source commit hash: $SOURCE_HASH"
           echo "source_hash=$SOURCE_HASH" >> $GITHUB_OUTPUT
 
@@ -45,25 +45,39 @@ jobs:
           SOURCE_HASH: ${{ steps.get_source_commit.outputs.source_hash }}
           LAST_HASH: ${{ steps.get_last_commit.outputs.last_hash }}
         run: |
-          if [ "$SOURCE_HASH" != "$LAST_HASH" ]; then
+          if [ "$SOURCE_HASH" != "$LAST_HASH" ] && [ -n "$SOURCE_HASH" ]; then
             echo "New commit detected. Proceeding to update."
             echo "update_needed=true" >> $GITHUB_ENV
           else
-            echo "No new commits. Skipping update."
+            echo "No new commits or unable to fetch source hash. Skipping update."
             echo "update_needed=false" >> $GITHUB_ENV
           fi
 
       - name: Update repository with source contents
         if: env.update_needed == 'true'
+        env:
+          SOURCE_HASH: ${{ steps.get_source_commit.outputs.source_hash }}
+          # If using a secret token, uncomment the line below
+          # SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
         run: |
-          mkdir -p temp_source
-          git clone --depth 1 https://github.com/yonasuriv/PanicSonda temp_source
-          # Remove all files except .git and .github
-          find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
-          # Copy: Copy files from source to root
-          cp -a temp_source/. .
-          rm -rf temp_source
-          echo "$SOURCE_HASH" > .last_source_commit
+          set -e
+          echo "ClCloning source repository..."
+          # If the source repository is private, use authentication
+          git clone --depth 1 https://github.com/yonasuriv/PanicSonda.git temp_source
+          # If authentication is needed, use:
+          # git clone --depth 1 https://x-access-token:${{ secrets.SOURCE_REPO_TOKEN }}@github.com/yonasuriv/PanicSonda.git temp_source
+
+          if [ -d "temp_source" ] && [ "$(ls -A temp_source)" ]; then
+            echo "Removing old files..."
+            find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
+            echo "Copying new files..."
+            cp -a temp_source/. .
+            rm -rf temp_source
+            echo "$SOURCE_HASH" > .last_source_commit
+          else
+            echo "Error: 'temp_source' directory does not exist or is empty."
+            exit 1
+          fi
 
       - name: Commit and push changes
         if: env.update_needed == 'true'
