@@ -2,10 +2,9 @@ name: Update Submodule
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Runs every 15 minutes
-  workflow_dispatch:         # Allows manual triggering
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
-# Grant write permissions to the GITHUB_TOKEN
 permissions:
   contents: write
 
