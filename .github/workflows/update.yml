@@ -3,7 +3,7 @@ name: Mirror Source Repository
 on:
   schedule:
     - cron: '*/15 * * * *'  # Runs every 15 minutes
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:         # Allows manual triggering
 
 jobs:
   update_repository:
@@ -12,80 +12,45 @@ jobs:
       - name: Checkout this repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history for accurate change detection
+          fetch-depth: 0
 
       - name: Set up Git
         run: |
-          git configconfig --global user.name "github-actions[bot]"
-          git configconfig --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Get latest commit hash from source repository
         id: get_source_commit
         run: |
-          echo "Fetching latest commit hash from source repository..."
           SOURCE_HASH=$(git ls-remote https://github.com/yonasuriv/PanicSonda.git HEAD | awk '{ print $1 }')
-          echo "Latest source commit hash: $SOURCE_HASH"
-          echo "source_hash=$SOURCE_HASH" >> $GITHUB_OUTPUT
+          echo "::set-output name=source_hash::$SOURCE_HASH"
 
       - name: Get last synced commit hash
         id: get_last_commit
         run: |
           if [ -f .last_source_commit ]; then
             LAST_HASH=$(cat .last_source_commit)
-            echo "Last synced commit found: $LAST_HASH"
-            echo "last_hash=$LAST_HASH" >> $GITHUB_OUTPUT
+            echo "::set-output name=last_hash::$LAST_HASH"
           else
-            echo "No last synced commit found."
-            echo "last_hash=" >> $GITHUB_OUTPUT
+            echo "::set-output name=last_hash::"
           fi
 
       - name: Decide whether to update
         id: decide_update
-        env:
-          SOURCE_HASH: ${{ steps.get_source_commit.outputs.source_hash }}
-          LAST_HASH: ${{ steps.get_last_commit.outputs.last_hash }}
         run: |
-          if [ "$SOURCE_HASH" != "$LAST_HASH" ] && [ -n "$SOURCE_HASH" ]; then
-            echo "New commit detected. Proceeding to update."
+          if [ "${{ steps.get_source_commit.outputs.source_hash }}" != "${{ steps steps.get_last_commit.outputs.last_hash }}" ]; then
             echo "update_needed=true" >> $GITHUB_ENV
           else
-            echo "No new commits or unable to fetch source hash. Skipping update."
             echo "update_needed=false" >> $GITHUB_ENV
           fi
 
-      - name: Checkout source repository
-        if: env.update_needed == 'true'
-        uses: actions/checkout@v3
-        with:
-          repository: yonasuriv/PanicSonda
-          path: temp_source
-          ref: main  # Replace with the branch you want to clone
-          # If the source repository is private, provide a token:
-          token: ${{ secrets.SOURCE_REPO_TOKEN }}
-
-      - name: List contents of temp_source
-        if: env.update_needed == 'true'
-        run: |
-          echo "Contents of temp_source:"
-          ls -la temp_source
-
       - name: Update repository with source contents
         if: env.update_needed == 'true'
-        env:
-          SOURCE_HASH: ${{ steps.get_source_commit.outputs.source_hash }}
         run: |
-          set -e
-          if [ -d "temp_source" ] && [ "$(ls -A temp_source)" ]; then
-            echo "Removing old files..."
-            find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
-            echo "Copying new files..."
-            cp -a temp_source/. .
-            rm -rf temp_source
-            echo "$SOURCE_HASH" > .last_source_commit
-          else
-            echo "Error: 'temp_source' directory does not exist or is empty."
-            exit 1
-          fi
+          git clone --depth 1 https://github.com/yonasuriv/PanicSonda.git temp_source
+          rsync -a --delete temp_source/ . --exclude '.git' --exclude '.github' --exclude '.last_source_commit'
+          rm -rf temp_source
+          echo "${{ steps.get_source_commit.outputs.source_hash }}" > .last_source_commit
 
       - name: Commit and push changes
         if: env.update_needed == 'true'
@@ -96,5 +61,4 @@ jobs:
 
       - name: No update needed
         if: env.update_needed == 'false'
-        run: |
-          echo "No update needed."
+        run: echo "No update needed."
