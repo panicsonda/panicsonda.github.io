@@ -16,7 +16,7 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config config --global user.name "github-actions[bot]"
+          git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Get latest commit hash from source repository
@@ -53,20 +53,22 @@ jobs:
             echo "update_needed=false" >> $GITHUB_ENV
           fi
 
+      - name: Checkout source repository
+        if: env.update_needed == 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: yonasuriv/PanicSonda
+          path: temp_source
+          ref: main  # Replace with the branch you want to clone
+          # If the source repository is private, provide a token:
+          # token: ${{ secrets.SOURCE_REPO_TOKEN }}
+
       - name: Update repository with source contents
         if: env.update_needed == 'true'
         env:
           SOURCE_HASH: ${{ steps.get_source_commit.outputs.source_hash }}
-          # If using a secret token, uncomment the line below
-          # SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
         run: |
           set -e
-          echo "ClCloning source repository..."
-          # If the source repository is private, use authentication
-          git clone --depth 1 https://github.com/yonasuriv/PanicSonda.git temp_source
-          # If authentication is needed, use:
-          # git clone --depth 1 https://x-access-token:${{ secrets.SOURCE_REPO_TOKEN }}@github.com/yonasuriv/PanicSonda.git temp_source
-
           if [ -d "temp_source" ] && [ "$(ls -A temp_source)" ]; then
             echo "Removing old files..."
             find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
