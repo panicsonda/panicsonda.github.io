@@ -1,3 +1,3 @@
 [submodule "web"]
-	path = .public
+	path = docs
 	url = https://github.com/yonasuriv/PanicSonda
