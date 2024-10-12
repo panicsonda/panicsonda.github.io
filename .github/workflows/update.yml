@@ -35,6 +35,7 @@ jobs:
     - name: Check for changes in submodule
       id: check_changes
       run: |
+        mkdir -p .public
         cd .public
         if [ -n "$(git status --porcelain)" ]; then
           echo "changes=true" >> $GITHUB_ENV
