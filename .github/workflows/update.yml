@@ -10,54 +10,76 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    -:
 
-    - name: Checkout this repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0  # Fetch all history for accurate change detection
+      -.
 
-    -
+      - name: Checkout this repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for accurate change detection
 
-    - name: Set up Git
+      - name: Set up Git
+        run: |
+          git config config config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      run: |
-        git config config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Get latest commit hash from source repository
+        id: get_source_commit
+        run: |
+          echo "Fetching latest commit hash from source repository..."
+          SOURCE_COMMIT=$(git ls-remote https://github.com/repo/url HEAD | awk '{ print $1 }')
+          echo "Latest source commit hash: $SOURCE_COMMIT"
+          echo "source_commit=$SOURCE_COMMIT" >> $GITHUB_OUTPUT
 
-    - name: Clone the source repository
-      run: |
-        git clone --depth 1 https://github.com/repo/url temp_source
+      - name: Get last synced commit hash
+        id: get_last_commit
+        run: |
+          if [ -f .last_source_commit ]; then
+            echo "Last synced commit found."
+            LAST_COMMIT=$(cat .last_source_commit)
+            echo "last_commit=$LAST_COM" >> $GITHUB_OUTPUT
+          else
+            echo "No last synced commit found."
+            echo "last_commit=" >> $GITHUB_OUTPUT
+          fi
 
-    - name: Remove existing files
-      run: |
-        # Remove all files except the .git directory
-        find . -maxdepth 1 ! -name '.git' ! -name '.' -exec rm -rf {} +
+      - name: Decide whether to update
+        id: decide_update
+        run: |
+          if [ "${{ steps.get_source_commit.outputs.source_commit }}" != "${{ steps( steps.get_last_commit.outputs.last_commit }}" ]; then
+            echo "New commit detected. Proceeding to update."
+            echo "update_needed=true" >> $GITHUB_ENV
+          else
+            echo "No new commits. Skipping update."
+            echo "update_needed=false" >> $GITHUB_ENV
+          fi
 
-    - name: Copy files from source to root
-      run: |
-        # Copy copy all files from temp_source to current directory
-        cp -a temp_source/. .
-        # Remove the cloned source repository directory
-        rm -rf temp_source
+      - name: Update repository with source contents
+        if: env.update_needed == 'true'
+        run: |
+          # Clone the source repository
+          git clone --depth 1 https://github.com/repo/url temp_source
 
-    - name: Check for changes
-      id: check_changes
-      run: |
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "changes=true" >> $GITHUB_ENV
-        else
-          echo "changes=false" >> $GITHUB_ENV
-        fi
+          # Remove existing files (except .git and workflow files)
+          find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
 
-    - name: Commit and push changes
-      if: env.changes == 'true'
-      run: |
-        git add .
-        git commit -m "Mirror update from source repository"
-        git push origin HEAD
+          # Copy copy files from source to root
+          cp -a temp_source/. .
 
-    - name: No changes detected
-      if: env.changes == 'false'
-      run: |
-        echo "No changes detected. No action needed."
+          # Remove the cloned source repository directory
+          rm -rf temp_source
+
+          # Store the latest source commit hash
+          echo "${{ steps.get_source_commit.outputs.source_commit }}" > .last_source_commit
+
+      - name: Commit and push changes
+        if: env.update_needed == 'true'
+        run: |
+          git add .
+          git commit -m "Mirror update from source repository"
+          git push origin HEAD
+
+      - name: No update needed
+        if: env.update_needed == 'false'
+        run: |
+          echo "No update needed."
