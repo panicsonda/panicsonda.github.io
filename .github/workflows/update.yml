@@ -56,6 +56,7 @@ jobs:
       - name: Update repository with source contents
         if: env.update_needed == 'true'
         run: |
+          mkdir -p temp_source
           git clone --depth 1 https://github.com/yonasuriv/PanicSonda temp_source
           # Remove all files except .git and .github
           find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
