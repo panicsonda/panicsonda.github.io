@@ -16,7 +16,7 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --global user.name "github-actions[bot]"
+          git config config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Get latest commit hash from source repository
@@ -42,7 +42,7 @@ jobs:
       - name: Decide whether to update
         id: decide_update
         run: |
-          if [ "${{ steps.get_source_commit.outputs.source_commit }}" != "${{ steps steps.get_last_commit.outputs.last_commit }}" ]; then
+          if [ "${{ steps.get_source_commit.outputs.source_commit }}" != "${{ steps:steps.get_last_commit.outputs.last_commit }}" ]; then
             echo "New commit detected. Proceeding to update."
             echo "update_needed=true" >> $GITHUB_ENV
           else
