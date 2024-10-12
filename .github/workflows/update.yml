@@ -3,7 +3,7 @@ name: Mirror Source Repository
 on:
   schedule:
     - cron: '*/15 * * * *'  # Runs every 15 minutes
-  workflow_dispatch:         # Allows manual triggering
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   update_repository:
@@ -16,33 +16,36 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config config --global user.name "github-actions[bot]"
+          git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Get latest commit hash from source repository
         id: get_source_commit
         run: |
           echo "Fetching latest commit hash from source repository..."
-          SOURCE_COMMIT=$(git ls-remote https://github.com/yonasuriv/PanicSonda HEAD | awk '{ print $1 }')
-          echo "Latest source commit hash: $SOURCE_COMMIT"
-          echo "source_commit=$SOURCE_COMMIT" >> $GITHUB_OUTPUT
+          SOURCE_HASH=$(git ls-remote https://github.com/yonasuriv/PanicSonda HEAD | awk '{ print $1 }')
+          echo "Latest source commit hash: $SOURCE_HASH"
+          echo "source_hash=$SOURCE_HASH" >> $GITHUB_OUTPUT
 
       - name: Get last synced commit hash
         id: get_last_commit
         run: |
           if [ -f .last_source_commit ]; then
-            LAST_COMMIT=$(cat .last_source_commit)
-            echo "Last synced commit found: $LAST_COM"
-            echo "last_commit=$LAST_COM" >> $GITHUB_OUTPUT
+            LAST_HASH=$(cat .last_source_commit)
+            echo "Last synced commit found: $LAST_HASH"
+            echo "last_hash=$LAST_HASH" >> $GITHUB_OUTPUT
           else
             echo "No last synced commit found."
-            echo "last_commit=" >> $GITHUB_OUTPUT
+            echo "last_hash=" >> $GITHUB_OUTPUT
           fi
 
       - name: Decide whether to update
         id: decide_update
+        env:
+          SOURCE_HASH: ${{ steps.get_source_commit.outputs.source_hash }}
+          LAST_HASH: ${{ steps.get_last_commit.outputs.last_hash }}
         run: |
-          if [ "${{ steps.get_source_commit.outputs.source_commit }}" != "${{ steps:steps.get_last_commit.outputs.last_commit }}" ]; then
+          if [ "$SOURCE_HASH" != "$LAST_HASH" ]; then
             echo "New commit detected. Proceeding to update."
             echo "update_needed=true" >> $GITHUB_ENV
           else
@@ -54,10 +57,12 @@ jobs:
         if: env.update_needed == 'true'
         run: |
           git clone --depth 1 https://github.com/yonasuriv/PanicSonda temp_source
+          # Remove all files except .git and .github
           find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '.github' -exec rm -rf {} +
+          # Copy: Copy files from source to root
           cp -a temp_source/. .
           rm -rf temp_source
-          echo "${{ steps.get_source_commit.outputs.source_commit }}" > .last_source_commit
+          echo "$SOURCE_HASH" > .last_source_commit
 
       - name: Commit and push changes
         if: env.update_needed == 'true'
